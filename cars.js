@@ -20,7 +20,7 @@ export class Car {
         this.toDirection = this.calculateToDirection();
         
         // Position and movement
-        const spawnPoint = intersection.getSpawnPoint(direction);
+        const spawnPoint = intersection.spawnPoints[direction];
         this.x = spawnPoint.x;
         this.y = spawnPoint.y;
         this.angle = this.getInitialAngle();
@@ -39,29 +39,34 @@ export class Car {
         this.isInIntersection = false;
         this.pathProgress = 0;
         this.turningPath = null;
+        this.hasStartedTurn = false;
+        this.turnProgress = 0;
         
         // Calculate target position for movement
         this.calculateTargetPosition();
     }
 
     calculateToDirection() {
+        const directions = [CONFIG.DIRECTIONS.NORTH, CONFIG.DIRECTIONS.EAST, CONFIG.DIRECTIONS.SOUTH, CONFIG.DIRECTIONS.WEST];
+        const currentIndex = directions.indexOf(this.fromDirection);
+        
         switch (this.turnType) {
             case CONFIG.TURN_TYPES.LEFT:
-                return (this.fromDirection + 3) % 4; // Turn left
+                return directions[(currentIndex + 3) % 4]; // Turn left
             case CONFIG.TURN_TYPES.RIGHT:
-                return (this.fromDirection + 1) % 4; // Turn right
+                return directions[(currentIndex + 1) % 4]; // Turn right
             case CONFIG.TURN_TYPES.STRAIGHT:
             default:
-                return (this.fromDirection + 2) % 4; // Go straight
+                return directions[(currentIndex + 2) % 4]; // Go straight
         }
     }
 
     getInitialAngle() {
         switch (this.fromDirection) {
-            case CONFIG.DIRECTIONS.NORTH: return Math.PI / 2; // Facing down
-            case CONFIG.DIRECTIONS.EAST: return Math.PI; // Facing left
-            case CONFIG.DIRECTIONS.SOUTH: return -Math.PI / 2; // Facing up
-            case CONFIG.DIRECTIONS.WEST: return 0; // Facing right
+            case CONFIG.DIRECTIONS.NORTH: return Math.PI / 2; // Facing south (down)
+            case CONFIG.DIRECTIONS.EAST: return Math.PI; // Facing west (left)
+            case CONFIG.DIRECTIONS.SOUTH: return -Math.PI / 2; // Facing north (up)
+            case CONFIG.DIRECTIONS.WEST: return 0; // Facing east (right)
             default: return 0;
         }
     }
@@ -157,60 +162,14 @@ calculateTargetPosition() {
         // Accelerate through intersection
         this.speed = Math.min(this.maxSpeed * 1.2, this.speed + 40 * dt);
 
-        // Move to target position for turning
-        if (this.turnType !== CONFIG.TURN_TYPES.STRAIGHT && this.isInIntersection) {
-            this.moveToTargetPosition(dt);
-
-            // Check if we've completed the turn and need to change direction
-            const dx = this.targetX - this.x;
-            const dy = this.targetY - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < 10) {
-                // We've reached the target position, now change our movement direction and lane
-                // Update fromDirection to the new direction after turn
-                if (this.turnType === CONFIG.TURN_TYPES.RIGHT) {
-                    // Right turn logic
-                    if (
-                        this.fromDirection === CONFIG.DIRECTIONS.NORTH ||
-                        this.fromDirection === CONFIG.DIRECTIONS.SOUTH
-                    ) {
-                        // N->S or S->N right turn: go into W->E lane
-                        this.fromDirection = CONFIG.DIRECTIONS.EAST;
-                        this.toDirection = CONFIG.DIRECTIONS.WEST;
-                    } else if (this.fromDirection === CONFIG.DIRECTIONS.WEST) {
-                        // W->E right turn: go into N->S lane
-                        this.fromDirection = CONFIG.DIRECTIONS.SOUTH;
-                        this.toDirection = CONFIG.DIRECTIONS.NORTH;
-                    } else if (this.fromDirection === CONFIG.DIRECTIONS.EAST) {
-                        // E->W right turn: go into S->N lane
-                        this.fromDirection = CONFIG.DIRECTIONS.NORTH;
-                        this.toDirection = CONFIG.DIRECTIONS.SOUTH;
-                    }
-                } else if (this.turnType === CONFIG.TURN_TYPES.LEFT) {
-                    // Left turn logic
-                    if (
-                        this.fromDirection === CONFIG.DIRECTIONS.NORTH ||
-                        this.fromDirection === CONFIG.DIRECTIONS.SOUTH
-                    ) {
-                        // N->S or S->N left turn: go into E->W lane
-                        this.fromDirection = CONFIG.DIRECTIONS.WEST;
-                        this.toDirection = CONFIG.DIRECTIONS.EAST;
-                    } else if (this.fromDirection === CONFIG.DIRECTIONS.WEST) {
-                        // W->E left turn: go into S->N lane
-                        this.fromDirection = CONFIG.DIRECTIONS.NORTH;
-                        this.toDirection = CONFIG.DIRECTIONS.SOUTH;
-                    } else if (this.fromDirection === CONFIG.DIRECTIONS.EAST) {
-                        // E->W left turn: go into N->S lane
-                        this.fromDirection = CONFIG.DIRECTIONS.SOUTH;
-                        this.toDirection = CONFIG.DIRECTIONS.NORTH;
-                    }
-                }
-                // After turn, set angle to match new direction and clear turningPath
-                this.angle = this.getInitialAngle();
-                this.turnType = CONFIG.TURN_TYPES.STRAIGHT;
-                this.turningPath = null;
-            }
+        // Handle turning in intersection
+        if (this.isInIntersection && !this.hasStartedTurn) {
+            this.hasStartedTurn = true;
+            this.turnProgress = 0;
+        }
+        
+        if (this.hasStartedTurn && this.turnProgress < 1) {
+            this.performTurn(dt);
         }
 
         // Check if we've exited the intersection
@@ -371,10 +330,59 @@ calculateTargetPosition() {
     }
 
     moveToTargetPosition() {
-        // Example logic: move car towards targetX/targetY
-        if (typeof this.targetX === 'number' && typeof this.targetY === 'number') {
-            this.x = this.targetX;
-            this.y = this.targetY;
+        // This method is no longer used - turning is handled by performTurn
+    }
+    
+    performTurn(dt) {
+        this.turnProgress += dt * 2; // Turn speed
+        
+        if (this.turnType === CONFIG.TURN_TYPES.STRAIGHT) {
+            // No turning needed for straight movement
+            return;
+        }
+        
+        // Calculate turn angle based on turn type
+        let targetAngle = this.angle;
+        if (this.turnType === CONFIG.TURN_TYPES.RIGHT) {
+            targetAngle = this.angle + Math.PI / 2;
+        } else if (this.turnType === CONFIG.TURN_TYPES.LEFT) {
+            targetAngle = this.angle - Math.PI / 2;
+        }
+        
+        // Smoothly interpolate to target angle
+        const angleDiff = targetAngle - this.angle;
+        this.angle += angleDiff * Math.min(this.turnProgress, 1) * dt * 3;
+        
+        // Normalize angle
+        while (this.angle > Math.PI) this.angle -= 2 * Math.PI;
+        while (this.angle < -Math.PI) this.angle += 2 * Math.PI;
+        
+        // Move to proper lane during turn
+        if (this.turnProgress >= 1) {
+            this.angle = targetAngle;
+            this.moveToProperLane();
+        }
+    }
+    
+    moveToProperLane() {
+        const laneOffset = CONFIG.LANE_WIDTH / 2;
+        const centerX = this.intersection.centerX;
+        const centerY = this.intersection.centerY;
+        
+        // Move to the correct lane based on final direction
+        switch (this.toDirection) {
+            case CONFIG.DIRECTIONS.NORTH:
+                this.x = centerX + laneOffset;
+                break;
+            case CONFIG.DIRECTIONS.SOUTH:
+                this.x = centerX - laneOffset;
+                break;
+            case CONFIG.DIRECTIONS.EAST:
+                this.y = centerY - laneOffset;
+                break;
+            case CONFIG.DIRECTIONS.WEST:
+                this.y = centerY + laneOffset;
+                break;
         }
     }
 }
@@ -431,11 +439,11 @@ export class CarManager {
 
     spawnCar() {
         // Randomly choose a direction to spawn from
-        const directions = [CONFIG.DIRECTIONS.NORTH, CONFIG.DIRECTIONS.SOUTH, CONFIG.DIRECTIONS.EAST, CONFIG.DIRECTIONS.WEST];
+        const directions = [CONFIG.DIRECTIONS.NORTH, CONFIG.DIRECTIONS.EAST, CONFIG.DIRECTIONS.SOUTH, CONFIG.DIRECTIONS.WEST];
         const direction = directions[Math.floor(Math.random() * directions.length)];
         
         // Check if there's space to spawn (no car too close to spawn point)
-        const spawnPoint = this.intersection.getSpawnPoint(direction);
+        const spawnPoint = this.intersection.spawnPoints[direction];
         const tooClose = this.cars.some(car => {
             const distance = utils.getDistance(car.x, car.y, spawnPoint.x, spawnPoint.y);
             return car.fromDirection === direction && distance < 60;

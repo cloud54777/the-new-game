@@ -71,20 +71,20 @@ this.stopLines = {
         // Car spawn points
         this.spawnPoints = {
             [CONFIG.DIRECTIONS.NORTH]: {
-                x: this.centerX - laneOffset,
+                x: this.centerX - laneOffset, // Right lane for cars going south
                 y: 0
             },
             [CONFIG.DIRECTIONS.EAST]: {
                 x: CONFIG.CANVAS_WIDTH,
-                y: this.centerY - laneOffset
+                y: this.centerY - laneOffset // Right lane for cars going west
             },
             [CONFIG.DIRECTIONS.SOUTH]: {
-                x: this.centerX + laneOffset,
+                x: this.centerX + laneOffset, // Right lane for cars going north
                 y: CONFIG.CANVAS_HEIGHT
             },
             [CONFIG.DIRECTIONS.WEST]: {
                 x: 0,
-                y: this.centerY + laneOffset
+                y: this.centerY + laneOffset // Right lane for cars going east
             }
         };
 
