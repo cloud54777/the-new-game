@@ -34,25 +34,24 @@ class TrafficSimulator {
 
     startGameLoop() {
         const gameLoop = (currentTime) => {
-            const deltaTime = (currentTime - this.lastTime) / 1000;
+            const deltaTime = currentTime - this.lastTime;
             this.lastTime = currentTime;
 
             if (this.isRunning) {
-                // Get durations from sliders
+                // Get durations from sliders (convert to milliseconds)
                 const settings = {
-                    GREEN_DURATION: Number(document.getElementById('greenDuration').value),
-                    YELLOW_DURATION: Number(document.getElementById('yellowDuration').value),
-                    ALL_RED_DURATION: Number(document.getElementById('redDuration').value),
-                    ...CONFIG
+                    GREEN_DURATION: Number(document.getElementById('greenDuration').value) * 1000,
+                    YELLOW_DURATION: Number(document.getElementById('yellowDuration').value) * 1000,
+                    ALL_RED_DURATION: Number(document.getElementById('redDuration').value) * 1000,
+                    CAR_SPAWN_RATE: Number(document.getElementById('carSpawnRate').value),
+                    CAR_SPEED: Number(document.getElementById('carSpeed').value),
+                    MIN_GREEN_TIME: 5000,
+                    DETECTOR_DISTANCE: 200
                 };
 
-                this.trafficLightController.update(deltaTime, CONFIG.MODES.FIXED, settings);
+                this.gameEngine.updateSettings(settings);
                 this.gameEngine.update(deltaTime);
             }
-
-            // Render intersection and traffic lights
-            this.gameEngine.intersection.render(this.ctx);
-            this.trafficLightController.render(this.ctx, this.gameEngine.intersection);
 
             this.gameEngine.render();
             requestAnimationFrame(gameLoop);
@@ -85,19 +84,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 const simulator = new TrafficSimulator();
-
-const directions = ['north', 'south', 'east', 'west'];
-function spawnCar(intersection, carManager) {
-    const direction = directions[Math.floor(Math.random() * directions.length)];
-    const car = new Car({
-        intersection: intersection,
-        direction: direction
-        // ...other car properties...
-    });
-    carManager.cars.push(car); // Use .cars array
-}
-
-// Spawn a car every 2 seconds
-setInterval(() => {
-    spawnCar(simulator.gameEngine.intersection, simulator.gameEngine.carManager);
-}, 2000);

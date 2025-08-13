@@ -115,6 +115,12 @@ export class GameEngine {
         }
     }
 
+    updateSettings(settings) {
+        this.settings = { ...this.settings, ...settings };
+        this.trafficLights.updateSettings(this.settings);
+        this.carManager.updateSettings(this.settings);
+    }
+
     // Getters for UI
     getStatistics() {
         return this.statistics.getStats();

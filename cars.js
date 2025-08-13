@@ -431,7 +431,7 @@ export class CarManager {
 
     spawnCar() {
         // Randomly choose a direction to spawn from
-        const directions = ['north', 'south', 'east', 'west'];
+        const directions = [CONFIG.DIRECTIONS.NORTH, CONFIG.DIRECTIONS.SOUTH, CONFIG.DIRECTIONS.EAST, CONFIG.DIRECTIONS.WEST];
         const direction = directions[Math.floor(Math.random() * directions.length)];
         
         // Check if there's space to spawn (no car too close to spawn point)
@@ -443,8 +443,9 @@ export class CarManager {
 
         if (!tooClose) {
             const car = new Car({
+                id: this.nextCarId++,
+                direction: direction,
                 intersection: this.intersection, // must be a valid object
-                direction: direction // or 'south', 'east', 'west'
             });
             this.cars.push(car);
         }
