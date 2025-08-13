@@ -51,8 +51,8 @@ class TrafficSimulator {
             }
 
             // Render intersection and traffic lights
-            this.intersection.render(this.ctx);
-            this.trafficLightController.render(this.ctx, this.intersection);
+            this.gameEngine.intersection.render(this.ctx);
+            this.trafficLightController.render(this.ctx, this.gameEngine.intersection);
 
             this.gameEngine.render();
             requestAnimationFrame(gameLoop);
