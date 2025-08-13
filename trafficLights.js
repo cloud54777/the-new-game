@@ -170,7 +170,7 @@ export class TrafficLightController {
     getCurrentGreenDirection() {
         for (const [direction, light] of Object.entries(this.lights)) {
             if (light.state === CONFIG.LIGHT_STATES.GREEN) {
-                return parseInt(direction);
+                return direction;
             }
         }
         return null;
@@ -183,12 +183,11 @@ export class TrafficLightController {
         let nextDirection = null;
 
         Object.entries(this.adaptiveData).forEach(([direction, data]) => {
-            const dir = parseInt(direction);
-            if (this.lights[dir].state !== CONFIG.LIGHT_STATES.GREEN && data.carsWaiting > 0) {
+            if (this.lights[direction].state !== CONFIG.LIGHT_STATES.GREEN && data.carsWaiting > 0) {
                 const priority = data.carsWaiting * (data.waitTime / 1000); // Simple priority calculation
                 if (priority > maxPriority) {
                     maxPriority = priority;
-                    nextDirection = dir;
+                    nextDirection = direction;
                 }
             }
         });
