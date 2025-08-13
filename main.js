@@ -99,5 +99,5 @@ function spawnCar(intersection, carManager) {
 
 // Spawn a car every 2 seconds
 setInterval(() => {
-    spawnCar(simulator.intersection, simulator.gameEngine.carManager);
+    spawnCar(simulator.gameEngine.intersection, simulator.gameEngine.carManager);
 }, 2000);
